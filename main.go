@@ -1,40 +1,13 @@
 package main
 
 import (
-	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
-	"strings"
 
+	"github.com/BurntSushi/toml"
 	"github.com/bwmarrin/discordgo"
 )
-
-type listStrValue struct {
-	strings *[]string
-}
-
-func (v listStrValue) String() string {
-	return strings.Join(*v.strings, ",")
-}
-func (v listStrValue) Set(value string) error {
-	*v.strings = strings.Split(value, ",")
-	return nil
-}
-
-var (
-	token     string
-	channelID string
-	question  string
-	choices   []string
-)
-
-func init() {
-	flag.StringVar(&token, "t", "", "Bot Token")
-	flag.StringVar(&channelID, "c", "", "Channel ID")
-	flag.StringVar(&question, "q", "", "Question")
-	flag.Var(listStrValue{&choices}, "cs", "Choices")
-	flag.Parse()
-}
 
 var reactions = []string{
 	"🇦",
@@ -59,17 +32,38 @@ var reactions = []string{
 	"🇹",
 }
 
+// Question represents a single question for Votus to ask
+type Question struct {
+	Text    string
+	Choices []string
+}
+
+// Config for Votus
+type Config struct {
+	Token     string
+	ChannelID string `toml:"channel_id"`
+	Questions []Question
+}
+
 func main() {
-	s, err := discordgo.New("Bot " + token)
+	configFileName := "config.toml"
+	var conf Config
+	bs, err := ioutil.ReadFile(configFileName)
 	if err != nil {
-		log.Fatalln("creating Discord session failed: ", err)
-		return
+		log.Fatalln("reading config file failed: ", err)
+	}
+	if _, err := toml.Decode(string(bs), &conf); err != nil {
+		log.Fatalln("loading config failed: ", err)
 	}
 
-	err = sendPoll(s, channelID, question, choices)
+	session, err := discordgo.New("Bot " + conf.Token)
+	if err != nil {
+		log.Fatalln("creating Discord session failed: ", err)
+	}
+
+	err = sendPoll(session, conf.ChannelID, conf.Questions[0].Text, conf.Questions[0].Choices)
 	if err != nil {
 		log.Fatalln("sending poll failed: ", err)
-		return
 	}
 }
 
