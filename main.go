@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/BurntSushi/toml"
@@ -45,7 +46,7 @@ type Question struct {
 type Config struct {
 	Token     string
 	Admins    []string
-	Questions []Question
+	Questions map[string]Question
 }
 
 // Bot represents the Votus bot
@@ -126,11 +127,20 @@ func (b *Bot) sendPollHandler(s *discordgo.Session, m *discordgo.MessageCreate) 
 		return
 	}
 
-	if m.Content == "votus" {
-		err := sendPoll(s, m.ChannelID, b.Questions[0].Text, b.Questions[0].Choices)
-		if err != nil {
-			log.Fatalln("sending poll failed: ", err)
-		}
+	tokens := strings.Split(m.Content, " ")
+	if len(tokens) != 2 {
+		return
+	}
+	if tokens[0] != "votus" {
+		return
+	}
+	question, ok := b.Questions[tokens[1]]
+	if !ok {
+		return
+	}
+	err := sendPoll(s, m.ChannelID, question.Text, question.Choices)
+	if err != nil {
+		log.Fatalln("sending poll failed: ", err)
 	}
 }
 
