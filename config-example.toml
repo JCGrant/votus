@@ -1,0 +1,22 @@
+token = "XXXXXXXXXX"
+admins = [
+  "JCGrant",
+]
+[questions]
+  [questions.day]
+  text = "What day shall we play?"
+  choices = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ]
+  [questions.location]
+  text = "Where shall we play?"
+  choices = [
+    "James'",
+    "Stefano's",
+  ]
